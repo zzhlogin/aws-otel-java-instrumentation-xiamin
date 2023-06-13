@@ -85,7 +85,6 @@ public class AwsTracerCustomizerProvider implements AutoConfigurationCustomizerP
       // Construct meterProvider
       MetricExporter metricsExporter =
           OtlpGrpcMetricExporter.builder()
-              .setEndpoint("http://otel-collector:4317")
               .setDefaultAggregationSelector(
                   instrumentType -> {
                     if (instrumentType == InstrumentType.HISTOGRAM) {
@@ -96,7 +95,7 @@ public class AwsTracerCustomizerProvider implements AutoConfigurationCustomizerP
               .setAggregationTemporalitySelector(AggregationTemporalitySelector.deltaPreferred())
               .build();
       MetricReader metricReader =
-          PeriodicMetricReader.builder(metricsExporter).setInterval(Duration.ofSeconds(10)).build();
+          PeriodicMetricReader.builder(metricsExporter).setInterval(Duration.ofSeconds(60)).build();
       MeterProvider meterProvider =
           SdkMeterProvider.builder()
               .setResource(ResourceHolder.getResource())
