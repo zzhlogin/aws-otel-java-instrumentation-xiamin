@@ -24,11 +24,12 @@ plugins {
 
 data class DependencySet(val group: String, val version: String, val modules: List<String>)
 
-val TEST_SNAPSHOTS = rootProject.findProperty("testUpstreamSnapshots") == "true"
+// val TEST_SNAPSHOTS = rootProject.findProperty("testUpstreamSnapshots") == "false"
+val TEST_SNAPSHOTS = false
 
 // This is the version of the upstream instrumentation BOM
 val otelVersion = "1.32.1"
-val otelSnapshotVersion = "1.33.0"
+val otelSnapshotVersion = "1.32.1"
 val otelAlphaVersion = if (!TEST_SNAPSHOTS) "$otelVersion-alpha" else "$otelSnapshotVersion-alpha-SNAPSHOT"
 val otelJavaAgentVersion = if (!TEST_SNAPSHOTS) otelVersion else "$otelSnapshotVersion-SNAPSHOT"
 // All versions below are only used in testing and do not affect the released artifact.
