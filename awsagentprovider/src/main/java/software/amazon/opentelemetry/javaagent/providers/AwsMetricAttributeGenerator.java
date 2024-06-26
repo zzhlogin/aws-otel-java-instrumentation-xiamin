@@ -41,6 +41,7 @@ import static io.opentelemetry.semconv.SemanticAttributes.SERVER_ADDRESS;
 import static io.opentelemetry.semconv.SemanticAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.SemanticAttributes.SERVER_SOCKET_ADDRESS;
 import static io.opentelemetry.semconv.SemanticAttributes.SERVER_SOCKET_PORT;
+import static software.amazon.opentelemetry.javaagent.providers.AwsAttributeKeys.AWS_ACTIVITY_ARN;
 import static software.amazon.opentelemetry.javaagent.providers.AwsAttributeKeys.AWS_AGENT_ID;
 import static software.amazon.opentelemetry.javaagent.providers.AwsAttributeKeys.AWS_BEDROCK_RUNTIME_MODEL_ID;
 import static software.amazon.opentelemetry.javaagent.providers.AwsAttributeKeys.AWS_BUCKET_NAME;
@@ -120,7 +121,6 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
   private static final String NORMALIZED_SNS_SERVICE_NAME = "AWS::SNS";
   private static final String NORMALIZED_LAMBDA_SERVICE_NAME = "AWS::Lambda";
   private static final String NORMALIZED_BEDROCK_SERVICE_NAME = "AWS::Bedrock";
-  private static final String NORMALIZED_BEDROCK_RUNTIME_SERVICE_NAME = "AWS::BedrockRuntime";
 
   // Special DEPENDENCY attribute value if GRAPHQL_OPERATION_TYPE attribute key is present.
   private static final String GRAPHQL = "graphql";
@@ -377,18 +377,22 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
         case "AmazonSQS": // AWS SDK v1
         case "Sqs": // AWS SDK v2
           return NORMALIZED_SQS_SERVICE_NAME;
-        case "Bedrock": // AWS SDK v2
-        case "AWSBedrockAgentRuntime":
-        case "AWSBedrockAgent":
-          return NORMALIZED_BEDROCK_SERVICE_NAME;
+        case "Bedrock": // AWS SDK v2 & v1
+        case "AWSBedrockAgentRuntime": // AWS SDK v1
+        case "BedrockAgentRuntime": // AWS SDK v2
+        case "AWSBedrockAgent": // AWS SDK v1
+        case "BedrockAgent": // AWS SDK v2
+        case "AmazonBedrockRuntime": // AWS SDK v1
         case "BedrockRuntime": // AWS SDK v2
-          return NORMALIZED_BEDROCK_RUNTIME_SERVICE_NAME;
-        case "AWSLambda": // AWS SDK v2 & v1
+          return NORMALIZED_BEDROCK_SERVICE_NAME;
+        case "AWSLambda": // AWS SDK v1
+        case "Lambda": // AWS SDK v2
           return NORMALIZED_LAMBDA_SERVICE_NAME;
         case "AWSStepFunctions": // AWS SDK v1
         case "Sfn": // AWS SDK v2
           return NORMALIZED_STEPFUNCTIONS_SERVICE_NAME;
-        case "AWSSecretsManager": // AWS SDK v2
+        case "AWSSecretsManager": // AWS SDK v1
+        case "SecretsManager": // AWS SDK v2
           return NORMALIZED_SECRETSMANAGER_SERVICE_NAME;
         case "AmazonSNS": // AWS SDK v1
         case "Sns": // AWS SDK v2
@@ -424,6 +428,11 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
         remoteResourceType = Optional.of(NORMALIZED_KINESIS_SERVICE_NAME + "::Stream");
         remoteResourceIdentifier =
             Optional.ofNullable(escapeDelimiters(span.getAttributes().get(AWS_STREAM_NAME)));
+      } else if (isKeyPresent(span, AWS_STREAM_CONSUMER_NAME)) {
+        remoteResourceType = Optional.of(NORMALIZED_KINESIS_SERVICE_NAME + "::StreamConsumer");
+        remoteResourceIdentifier =
+            Optional.ofNullable(
+                escapeDelimiters(span.getAttributes().get(AWS_STREAM_CONSUMER_NAME)));
       } else if (isKeyPresent(span, AWS_BUCKET_NAME)) {
         remoteResourceType = Optional.of(NORMALIZED_S3_SERVICE_NAME + "::Bucket");
         remoteResourceIdentifier =
@@ -444,26 +453,27 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
         remoteResourceType = Optional.of(NORMALIZED_STEPFUNCTIONS_SERVICE_NAME + "::StateMachine");
         remoteResourceIdentifier =
             Optional.ofNullable(escapeDelimiters(span.getAttributes().get(AWS_STATE_MACHINE_ARN)));
-      } else if (isKeyPresent(span, MESSAGING_DESTINATION_NAME)) {
+      } else if (isKeyPresent(span, AWS_ACTIVITY_ARN)) {
+        remoteResourceType = Optional.of(NORMALIZED_STEPFUNCTIONS_SERVICE_NAME + "::Activity");
+        remoteResourceIdentifier =
+            Optional.ofNullable(escapeDelimiters(span.getAttributes().get(AWS_ACTIVITY_ARN)));
+      } else if (isKeyPresent(span, MESSAGING_DESTINATION_NAME)
+          && normalizeRemoteServiceName(span, getRemoteService(span, RPC_SERVICE))
+              .equals(NORMALIZED_SNS_SERVICE_NAME)) {
         remoteResourceType = Optional.of(NORMALIZED_SNS_SERVICE_NAME + "::Topic");
         remoteResourceIdentifier =
             Optional.ofNullable(
                 escapeDelimiters(span.getAttributes().get(MESSAGING_DESTINATION_NAME)));
-      } else if (isKeyPresent(span, AWS_STREAM_CONSUMER_NAME)) {
-        remoteResourceType = Optional.of(NORMALIZED_KINESIS_SERVICE_NAME + "::StreamConsumer");
-        remoteResourceIdentifier =
-            Optional.ofNullable(
-                escapeDelimiters(span.getAttributes().get(AWS_STREAM_CONSUMER_NAME)));
-      } else if (isKeyPresent(span, AWS_LAMBDA_FUNCTION_NAME)) {
-        remoteResourceType = Optional.of(NORMALIZED_LAMBDA_SERVICE_NAME + "::Function");
-        remoteResourceIdentifier =
-            Optional.ofNullable(
-                escapeDelimiters(span.getAttributes().get(AWS_LAMBDA_FUNCTION_NAME)));
       } else if (isKeyPresent(span, AWS_LAMBDA_SOURCE_MAPPING_ID)) {
         remoteResourceType = Optional.of(NORMALIZED_LAMBDA_SERVICE_NAME + "::EventSourceMapping");
         remoteResourceIdentifier =
             Optional.ofNullable(
                 escapeDelimiters(span.getAttributes().get(AWS_LAMBDA_SOURCE_MAPPING_ID)));
+      } else if (isKeyPresent(span, AWS_LAMBDA_FUNCTION_NAME)) {
+        remoteResourceType = Optional.of(NORMALIZED_LAMBDA_SERVICE_NAME + "::Function");
+        remoteResourceIdentifier =
+            Optional.ofNullable(
+                escapeDelimiters(span.getAttributes().get(AWS_LAMBDA_FUNCTION_NAME)));
       } else if (isKeyPresent(span, AWS_AGENT_ID)) {
         remoteResourceType = Optional.of(NORMALIZED_BEDROCK_SERVICE_NAME + "::Agent");
         remoteResourceIdentifier =
@@ -481,7 +491,7 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
         remoteResourceIdentifier =
             Optional.ofNullable(escapeDelimiters(span.getAttributes().get(AWS_GUARDRAIL_ID)));
       } else if (isKeyPresent(span, AWS_BEDROCK_RUNTIME_MODEL_ID)) {
-        remoteResourceType = Optional.of(NORMALIZED_BEDROCK_RUNTIME_SERVICE_NAME + "::Model");
+        remoteResourceType = Optional.of(NORMALIZED_BEDROCK_SERVICE_NAME + "::Model");
         remoteResourceIdentifier =
             Optional.ofNullable(
                 escapeDelimiters(span.getAttributes().get(AWS_BEDROCK_RUNTIME_MODEL_ID)));

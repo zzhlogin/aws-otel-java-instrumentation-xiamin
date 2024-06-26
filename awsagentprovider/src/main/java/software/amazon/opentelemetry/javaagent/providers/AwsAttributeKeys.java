@@ -63,7 +63,6 @@ final class AwsAttributeKeys {
       AttributeKey.stringKey("aws.bedrock.knowledgebase_id");
   static final AttributeKey<String> AWS_DATASOURCE_ID =
       AttributeKey.stringKey("aws.bedrock.datasource_id");
-
   static final AttributeKey<String> AWS_GUARDRAIL_ID =
       AttributeKey.stringKey("aws.bedrock.guardrail_id");
   static final AttributeKey<String> AWS_BEDROCK_RUNTIME_MODEL_ID =
@@ -76,7 +75,6 @@ final class AwsAttributeKeys {
       AttributeKey.stringKey("aws.stepfunctions.activity_arn");
   static final AttributeKey<String> AWS_LAMBDA_FUNCTION_NAME =
       AttributeKey.stringKey("aws.lambda.function_name");
-
   static final AttributeKey<String> AWS_LAMBDA_SOURCE_MAPPING_ID =
       AttributeKey.stringKey("aws.lambda.resource_mapping_id");
 }
