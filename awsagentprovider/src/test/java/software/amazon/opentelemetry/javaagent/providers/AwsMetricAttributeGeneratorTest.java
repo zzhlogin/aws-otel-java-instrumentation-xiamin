@@ -1152,7 +1152,7 @@ class AwsMetricAttributeGeneratorTest {
     testAwsSdkServiceNormalization("Bedrock", "AWS::Bedrock");
     testAwsSdkServiceNormalization("AWSBedrockAgentRuntime", "AWS::Bedrock");
     testAwsSdkServiceNormalization("AWSBedrockAgent", "AWS::Bedrock");
-    testAwsSdkServiceNormalization("AmazonBedrockRuntime", "AWS::Bedrock");
+    testAwsSdkServiceNormalization("AmazonBedrockRuntime", "AWS::BedrockRuntime");
     testAwsSdkServiceNormalization("AWSLambda", "AWS::Lambda");
     testAwsSdkServiceNormalization("AWSStepFunctions", "AWS::StepFunctions");
     testAwsSdkServiceNormalization("AWSSecretsManager", "AWS::SecretsManager");
@@ -1166,7 +1166,7 @@ class AwsMetricAttributeGeneratorTest {
     testAwsSdkServiceNormalization("Bedrock", "AWS::Bedrock");
     testAwsSdkServiceNormalization("BedrockAgentRuntime", "AWS::Bedrock");
     testAwsSdkServiceNormalization("BedrockAgent", "AWS::Bedrock");
-    testAwsSdkServiceNormalization("BedrockRuntime", "AWS::Bedrock");
+    testAwsSdkServiceNormalization("BedrockRuntime", "AWS::BedrockRuntime");
     testAwsSdkServiceNormalization("Lambda", "AWS::Lambda");
     testAwsSdkServiceNormalization("Sfn", "AWS::StepFunctions");
     testAwsSdkServiceNormalization("SecretsManager", "AWS::SecretsManager");

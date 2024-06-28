@@ -121,6 +121,7 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
   private static final String NORMALIZED_SNS_SERVICE_NAME = "AWS::SNS";
   private static final String NORMALIZED_LAMBDA_SERVICE_NAME = "AWS::Lambda";
   private static final String NORMALIZED_BEDROCK_SERVICE_NAME = "AWS::Bedrock";
+  private static final String NORMALIZED_BEDROCK_RUNTIME_SERVICE_NAME = "AWS::BedrockRuntime";
 
   // Special DEPENDENCY attribute value if GRAPHQL_OPERATION_TYPE attribute key is present.
   private static final String GRAPHQL = "graphql";
@@ -382,9 +383,10 @@ final class AwsMetricAttributeGenerator implements MetricAttributeGenerator {
         case "BedrockAgentRuntime": // AWS SDK v2
         case "AWSBedrockAgent": // AWS SDK v1
         case "BedrockAgent": // AWS SDK v2
+          return NORMALIZED_BEDROCK_SERVICE_NAME;
         case "AmazonBedrockRuntime": // AWS SDK v1
         case "BedrockRuntime": // AWS SDK v2
-          return NORMALIZED_BEDROCK_SERVICE_NAME;
+          return NORMALIZED_BEDROCK_RUNTIME_SERVICE_NAME;
         case "AWSLambda": // AWS SDK v1
         case "Lambda": // AWS SDK v2
           return NORMALIZED_LAMBDA_SERVICE_NAME;
