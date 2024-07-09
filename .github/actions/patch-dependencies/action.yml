@@ -46,13 +46,13 @@ runs:
 
     - name: check patches
       run: |
-        if [[ -f .github/patches/opentelemetry-java.patch ]]; then
+        if [[ -f .github/patches/release/*/opentelemetry-java.patch ]]; then
           echo 'patch_otel_java=true' >> $GITHUB_ENV
         fi
-        if [[ -f .github/patches/opentelemetry-java-instrumentation.patch ]]; then
+        if [[ -f .github/patches/release/*/opentelemetry-java-instrumentation.patch ]]; then
             echo 'patch_otel_java_instrumentation=true' >> $GITHUB_ENV
         fi
-        if [[ -f .github/patches/opentelemetry-java-contrib.patch ]]; then
+        if [[ -f .github/patches/release/*/opentelemetry-java-contrib.patch ]]; then
             echo 'patch_otel_java_contrib=true' >> $GITHUB_ENV
         fi
       shell: bash

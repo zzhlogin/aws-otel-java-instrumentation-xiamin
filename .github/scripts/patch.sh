@@ -10,12 +10,12 @@ set -x -e -u
 # OTEL_JAVA_CONTRIB_VERSION. Tag of the opentelemetry-java-contrib repository. E.g.: OTEL_JAVA_CONTRIB_VERSION=v1.21.0
 # This script will fail if a variable that is supposed to exist is referenced.
 
-if [[ ! -f .github/patches/versions ]]; then
+if [[ ! -f .github/patches/release/*/versions ]]; then
   echo "No versions file found. Skipping patching"
   exit 0
 fi
 
-source .github/patches/versions
+source .github/patches/release/*/versions
 
 git config --global user.email "adot-patch-workflow@github.com"
 git config --global user.name "ADOT Patch workflow"
