@@ -50,6 +50,7 @@ runs:
           echo 'patch_otel_java=true' >> $GITHUB_ENV
         fi
         if [[ -f .github/patches/release/*/opentelemetry-java-instrumentation.patch ]]; then
+            echo 'patch_otel_java_instrumentation=true found!!!!' 
             echo 'patch_otel_java_instrumentation=true' >> $GITHUB_ENV
         fi
         if [[ -f .github/patches/release/*/opentelemetry-java-contrib.patch ]]; then
@@ -117,6 +118,8 @@ runs:
         build-root-directory: opentelemetry-java-instrumentation
 
     - name: cleanup opentelmetry-java-instrumentation
-      run: rm -rf opentelemetry-java-instrumentation
+      run: |
+        echo "Cleaning up opentelemetry-java-instrumentation directory"
+        rm -rf opentelemetry-java-instrumentation
       if: ${{ env.patch_otel_java_instrumentation == 'true' }}
       shell: bash
