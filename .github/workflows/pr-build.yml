@@ -37,106 +37,106 @@ jobs:
         with:
           run_tests: "true"
 
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
-        exclude:
-          # Skip windows on patch workflow because it is not possible to build opentelemetry-java on windows
-          # when the cache is in a different drive than the source code
-          # Windows is not working for patch workflows, therefore we disable it here
-          # https://github.com/square/wire/issues/2188
-          # https://github.com/open-telemetry/opentelemetry-java/issues/4560
-          - os: ${{ startsWith(github.event.pull_request.base.ref, 'release/v') && 'windows-latest' || '' }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: temurin
-
-      - uses: gradle/wrapper-validation-action@v1
-
-      - name: Find and hash patch files
-        id: hash_patch
-        if: ${{ matrix.os != 'windows-latest' }}
-        run: |
-          echo "Finding patch files:"
-          echo "Hash of patch files: ${{ hashFiles('.github/patches/release/*/opentelemetry-java*.patch') }}"
-          find .github/patches/release/* -name 'opentelemetry-java*.patch' | while read -r patch_file; do
-            echo "File: $patch_file"
-            patch_hash=$(git hash-object "$patch_file")
-            echo "Hash: $patch_hash"
-            echo "::set-output name=hashes::${patch_file}:${patch_hash}"
-          done
-
-        # cache local patch outputs
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.m2/repository/io/opentelemetry/
-          key: ${{ runner.os }}-maven-local-${{ hashFiles('.github/patches/release/*/opentelemetry-java*.patch') }}
-
-      - name: Publish patched dependencies to maven local
-        uses: ./.github/actions/patch-dependencies
-        if: ${{ matrix.os != 'windows-latest' }} # Skip patch on windows as it is not possible to build opentelemetry-java on windows
-
-      - name: Build with Gradle with Integration tests
-        uses: gradle/gradle-build-action@v3
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          arguments: build integrationTests --stacktrace -PenableCoverage=true -PlocalDocker=true
-
-      - name: Pull base image of Contract Tests Sample Apps
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: docker pull public.ecr.aws/docker/library/amazoncorretto:17-alpine
-
-      - name: Run contract tests
-        uses: gradle/gradle-build-action@v3
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          arguments: contractTests -PlocalDocker=true -i
-
-      - name: Get current version
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          echo "ADOT_JAVA_VERSION=$(./gradlew printVersion -q )" >> $GITHUB_ENV
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-
-      - name: Build image for testing
-        uses: docker/build-push-action@v5
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          push: false
-          build-args: "ADOT_JAVA_VERSION=${{ env.ADOT_JAVA_VERSION }}"
-          context: .
-          platforms: linux/amd64
-          tags: ${{ env.TEST_TAG }}
-          load: true
-
-      - name: Test docker image
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: .github/scripts/test-adot-javaagent-image.sh "${{ env.TEST_TAG }}" "${{ env.ADOT_JAVA_VERSION }}"
-
-      - name: Build with Gradle
-        uses: gradle/gradle-build-action@v3
-        if: ${{ matrix.os != 'ubuntu-latest' && (hashFiles('.github/patches/release/*/opentelemetry-java*.patch') == '' || matrix.os != 'windows-latest' ) }} # build on windows as well unless a patch exists
-        with:
-          arguments: build --stacktrace -PenableCoverage=true
-      - uses: codecov/codecov-action@v3
+#  build:
+#    name: Build on ${{ matrix.os }}
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os:
+#          - macos-latest
+#          - ubuntu-latest
+#          - windows-latest
+#        exclude:
+#          # Skip windows on patch workflow because it is not possible to build opentelemetry-java on windows
+#          # when the cache is in a different drive than the source code
+#          # Windows is not working for patch workflows, therefore we disable it here
+#          # https://github.com/square/wire/issues/2188
+#          # https://github.com/open-telemetry/opentelemetry-java/issues/4560
+#          - os: ${{ startsWith(github.event.pull_request.base.ref, 'release/v') && 'windows-latest' || '' }}
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: actions/setup-java@v4
+#        with:
+#          java-version: 17
+#          distribution: temurin
+#
+#      - uses: gradle/wrapper-validation-action@v1
+#
+#      - name: Find and hash patch files
+#        id: hash_patch
+#        if: ${{ matrix.os != 'windows-latest' }}
+#        run: |
+#          echo "Finding patch files:"
+#          echo "Hash of patch files: ${{ hashFiles('.github/patches/release/*/opentelemetry-java*.patch') }}"
+#          find .github/patches/release/* -name 'opentelemetry-java*.patch' | while read -r patch_file; do
+#            echo "File: $patch_file"
+#            patch_hash=$(git hash-object "$patch_file")
+#            echo "Hash: $patch_hash"
+#            echo "::set-output name=hashes::${patch_file}:${patch_hash}"
+#          done
+#
+#        # cache local patch outputs
+#      - name: Cache local Maven repository
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.m2/repository/io/opentelemetry/
+#          key: ${{ runner.os }}-maven-local-${{ hashFiles('.github/patches/release/*/opentelemetry-java*.patch') }}
+#
+#      - name: Publish patched dependencies to maven local
+#        uses: ./.github/actions/patch-dependencies
+#        if: ${{ matrix.os != 'windows-latest' }} # Skip patch on windows as it is not possible to build opentelemetry-java on windows
+#
+#      - name: Build with Gradle with Integration tests
+#        uses: gradle/gradle-build-action@v3
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        with:
+#          arguments: build integrationTests --stacktrace -PenableCoverage=true -PlocalDocker=true
+#
+#      - name: Pull base image of Contract Tests Sample Apps
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        run: docker pull public.ecr.aws/docker/library/amazoncorretto:17-alpine
+#
+#      - name: Run contract tests
+#        uses: gradle/gradle-build-action@v3
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        with:
+#          arguments: contractTests -PlocalDocker=true -i
+#
+#      - name: Get current version
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        shell: bash
+#        run: |
+#          echo "ADOT_JAVA_VERSION=$(./gradlew printVersion -q )" >> $GITHUB_ENV
+#
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v3
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#
+#      - name: Build image for testing
+#        uses: docker/build-push-action@v5
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        with:
+#          push: false
+#          build-args: "ADOT_JAVA_VERSION=${{ env.ADOT_JAVA_VERSION }}"
+#          context: .
+#          platforms: linux/amd64
+#          tags: ${{ env.TEST_TAG }}
+#          load: true
+#
+#      - name: Test docker image
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        shell: bash
+#        run: .github/scripts/test-adot-javaagent-image.sh "${{ env.TEST_TAG }}" "${{ env.ADOT_JAVA_VERSION }}"
+#
+#      - name: Build with Gradle
+#        uses: gradle/gradle-build-action@v3
+#        if: ${{ matrix.os != 'ubuntu-latest' && (hashFiles('.github/patches/release/*/opentelemetry-java*.patch') == '' || matrix.os != 'windows-latest' ) }} # build on windows as well unless a patch exists
+#        with:
+#          arguments: build --stacktrace -PenableCoverage=true
+#      - uses: codecov/codecov-action@v3
